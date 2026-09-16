@@ -1,0 +1,56 @@
+{
+  "name": "conversation-display-kit",
+  "version": "0.1.1",
+  "description": "Accessible, provider-neutral React components for conversational prototypes",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./styles.css": "./dist/index.css"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --external react --sourcemap",
+    "lint": "eslint .",
+    "prepare": "npm run build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "eslint": "^10.10.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^16.3.0",
+    "jsdom": "^30.0.1",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^5.0.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
