@@ -19,15 +19,25 @@ React and React DOM are peer dependencies.
 ```tsx
 import { useState } from "react";
 import {
+  ChangeReviewCard,
   ConversationDisplay,
   PromptChips,
   type DisplayMessage,
+  type ReviewChange,
 } from "conversation-display-kit";
 
 export function Demo() {
   const [value, setValue] = useState("");
   const messages: DisplayMessage[] = [
     { id: "welcome", role: "assistant", text: "What should we plan?" },
+  ];
+  const changes: ReviewChange[] = [
+    {
+      id: "pickup",
+      label: "School pickup",
+      before: "Alex at 3:00 PM",
+      after: "Sam at 3:30 PM",
+    },
   ];
 
   return (
@@ -39,6 +49,13 @@ export function Demo() {
         value={value}
         onValueChange={setValue}
         onSubmit={(message) => console.log(message)}
+      />
+      <ChangeReviewCard
+        title="Review the proposed changes"
+        summary="The doctor's appointment remains at 4:00 PM."
+        changes={changes}
+        onAccept={() => console.log("Apply proposal")}
+        onReject={() => console.log("Keep current plan")}
       />
     </>
   );
@@ -62,6 +79,11 @@ variables on a parent element to match your product:
   accessible conversation status.
 - `PromptChips`: responsive suggested-prompt buttons.
 - `ConversationStatus`: standalone live-region status indicator.
+- `ChangeReviewCard`: labelled review region with a semantic change list and
+  keyboard-accessible accept/reject buttons. Each `ReviewChange` has a stable
+  `id`, a `label`, and optional `before`/`after` text; pass `onAccept` and
+  `onReject` to decide what those actions do. Optional `acceptLabel`,
+  `rejectLabel`, `disabled`, and `className` props are available.
 - `DisplayMessage`, `ConversationStatusValue`, and component prop types.
 
 ## Development

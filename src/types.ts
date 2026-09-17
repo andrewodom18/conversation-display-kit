@@ -38,3 +38,22 @@ export type ConversationStatusProps = {
   labels?: Partial<Record<ConversationStatusValue, string>>;
 };
 
+/** A provider-neutral, human-readable description of one proposed change. */
+export type ReviewChange = {
+  id: string;
+  label: string;
+  before?: string;
+  after?: string;
+};
+
+export type ChangeReviewCardProps = {
+  title: string;
+  summary?: string;
+  changes: readonly ReviewChange[];
+  onAccept: () => void;
+  onReject: () => void;
+  disabled?: boolean;
+  className?: string;
+  acceptLabel?: string;
+  rejectLabel?: string;
+};

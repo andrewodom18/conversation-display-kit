@@ -1,6 +1,6 @@
 {
   "name": "conversation-display-kit",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Accessible, provider-neutral React components for conversational prototypes",
   "license": "MIT",
   "type": "module",
