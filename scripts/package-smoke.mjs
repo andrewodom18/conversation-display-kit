@@ -7,8 +7,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const output = path.join(root, "output");
 mkdirSync(output, { recursive: true });
 const run = (command, args, cwd) => execFileSync(command, args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
-const packed = JSON.parse(run("npm", ["pack", "--ignore-scripts", "--json", "--pack-destination", output], root));
-const tarball = path.join(output, packed[0].filename);
+const metadata = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
+run("npm", ["pack", "--ignore-scripts", "--pack-destination", output], root);
+const tarball = path.join(output, `${metadata.name.replace("/", "-")}-${metadata.version}.tgz`);
 for (const version of [18, 19]) {
   const consumer = mkdtempSync(path.join(output, `consumer-react${version}-`));
   try {
@@ -37,5 +38,4 @@ for (const version of [18, 19]) {
     rmSync(consumer, { recursive: true, force: true });
   }
 }
-const metadata = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
 console.log(`Verified ${metadata.name}@${metadata.version}: ${tarball}`);
