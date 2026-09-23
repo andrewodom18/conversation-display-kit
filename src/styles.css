@@ -1,6 +1,6 @@
 :root {
-  --cdk-bg: rgba(255, 255, 255, 0.05);
-  --cdk-panel: rgba(255, 255, 255, 0.075);
+  --cdk-bg: #111827;
+  --cdk-panel: #1e293b;
   --cdk-border: rgba(255, 255, 255, 0.12);
   --cdk-text: #f8fafc;
   --cdk-muted: #a8b3cf;
@@ -24,8 +24,10 @@
   color: var(--cdk-text);
   display: grid;
   font-family: var(--cdk-font);
-  grid-template-rows: auto minmax(260px, 1fr) auto;
-  min-height: 520px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 520px;
+  min-height: 0;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -80,6 +82,9 @@
   flex-direction: column;
   gap: 14px;
   overflow-y: auto;
+  height: 100%;
+  overscroll-behavior: contain;
+  min-height: 0;
   padding: 22px;
 }
 
@@ -89,7 +94,7 @@
   display: flex;
   flex: 1;
   justify-content: center;
-  min-height: 220px;
+  min-height: 0;
   padding: 24px;
   text-align: center;
 }
@@ -105,6 +110,7 @@
   line-height: 1.55;
   margin: 6px 0 0;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .cdk-message--assistant {
@@ -123,11 +129,12 @@
   border-top: 1px solid var(--cdk-border);
   display: grid;
   gap: 10px;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   padding: 16px;
 }
 
-.cdk-composer input {
+.cdk-composer input,
+.cdk-composer textarea {
   background: rgba(3, 7, 18, 0.45);
   border: 1px solid var(--cdk-border);
   border-radius: 14px;
@@ -138,7 +145,8 @@
   padding: 13px 14px;
 }
 
-.cdk-composer input:focus {
+.cdk-composer input:focus,
+.cdk-composer textarea:focus {
   border-color: var(--cdk-accent);
   box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.12);
 }
@@ -173,7 +181,7 @@
 .cdk-prompt {
   background: var(--cdk-panel);
   border: 1px solid var(--cdk-border);
-  border-radius: 999px;
+  border-radius: 16px;
   color: var(--cdk-text);
   font-size: 0.82rem;
   padding: 9px 13px;
@@ -316,7 +324,7 @@
 @media (max-width: 640px) {
   .cdk-conversation {
     border-radius: 18px;
-    min-height: 470px;
+    height: 470px;
   }
 
   .cdk-conversation__messages {
@@ -336,4 +344,28 @@
   .cdk-status__dot {
     animation: none !important;
   }
+}
+
+.cdk-conversation__history { position: relative; min-height: 0; min-width: 0; }
+.cdk-message { flex-shrink: 0; min-width: 0; }
+.cdk-conversation__header { gap: 12px; flex-wrap: wrap; }
+.cdk-composer textarea { resize: vertical; max-height: 160px; }
+.cdk-composer > :last-of-type.cdk-composer__submit { grid-column: -2; }
+.cdk-jump {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  background: var(--cdk-accent); color: #082f49; border: 0; border-radius: 16px;
+  padding: 10px 16px; font: inherit; font-weight: 700; cursor: pointer;
+}
+.cdk-review__status { color: var(--cdk-text); overflow-wrap: anywhere; }
+.cdk-review__status:empty { display: none; }
+.cdk-review__title, .cdk-review__summary, .cdk-review__change-label, .cdk-prompt { overflow-wrap: anywhere; }
+.cdk-prompts, .cdk-status { font-family: var(--cdk-font); }
+.cdk-conversation button:focus-visible, .cdk-prompt:focus-visible,
+.cdk-conversation__messages:focus-visible {
+  outline: 3px solid var(--cdk-accent-strong); outline-offset: -3px;
+}
+@media (max-width: 400px) {
+  .cdk-composer { grid-template-columns: minmax(0, 1fr) auto; padding: 12px; }
+  .cdk-composer input, .cdk-composer textarea { grid-column: 1 / -1; }
+  .cdk-composer > :last-of-type.cdk-composer__submit { grid-column: -2; }
 }

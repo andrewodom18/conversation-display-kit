@@ -1,5 +1,3 @@
-import "./styles.css";
-
 export { ConversationDisplay } from "./ConversationDisplay";
 export { ConversationStatus } from "./ConversationStatus";
 export { PromptChips } from "./PromptChips";
@@ -12,4 +10,5 @@ export type {
   DisplayMessage,
   PromptChipsProps,
   ReviewChange,
+  ReviewStatus,
 } from "./types";

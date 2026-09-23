@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 
 export type DisplayMessage = {
   id: string;
@@ -24,6 +24,15 @@ export type ConversationDisplayProps = {
   composerAction?: ReactNode;
   className?: string;
   submitLabel?: string;
+  /** Ref for focus management; both single-line and multiline composers are supported. */
+  inputRef?: Ref<HTMLInputElement | HTMLTextAreaElement>;
+  logRef?: Ref<HTMLDivElement>;
+  maxLength?: number;
+  multiline?: boolean;
+  inputLabel?: string;
+  logLabel?: string;
+  title?: string;
+  statusLabels?: Partial<Record<ConversationStatusValue, string>>;
 };
 
 export type PromptChipsProps = {
@@ -46,6 +55,8 @@ export type ReviewChange = {
   after?: string;
 };
 
+export type ReviewStatus = "pending" | "applying" | "applied" | "rejected" | "error";
+
 export type ChangeReviewCardProps = {
   title: string;
   summary?: string;
@@ -56,4 +67,6 @@ export type ChangeReviewCardProps = {
   className?: string;
   acceptLabel?: string;
   rejectLabel?: string;
+  status?: ReviewStatus;
+  statusMessage?: string;
 };

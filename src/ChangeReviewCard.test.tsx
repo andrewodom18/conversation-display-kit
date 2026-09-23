@@ -88,3 +88,21 @@ describe("ChangeReviewCard", () => {
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
   });
 });
+
+describe("review lifecycle", () => {
+  it.each(["applying", "applied", "rejected"] as const)("locks actions when %s", (status) => {
+    render(<ChangeReviewCard title="Review" changes={changes} status={status} onAccept={() => {}} onReject={() => {}} />);
+    expect(screen.getByRole("button", { name: "Apply" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Keep current" })).toBeDisabled();
+    expect(screen.getByRole("status")).not.toBeEmptyDOMElement();
+    expect(screen.getByRole("region")).toHaveAttribute("aria-busy", String(status === "applying"));
+  });
+
+  it("announces a retryable error and custom status text", async () => {
+    const onAccept = vi.fn();
+    render(<ChangeReviewCard title="Review" changes={changes} status="error" statusMessage="Connection lost. Retry to apply." onAccept={onAccept} onReject={() => {}} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Connection lost. Retry to apply.");
+    await userEvent.click(screen.getByRole("button", { name: "Apply" }));
+    expect(onAccept).toHaveBeenCalledOnce();
+  });
+});

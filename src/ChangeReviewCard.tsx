@@ -11,12 +11,20 @@ export function ChangeReviewCard({
   className = "",
   acceptLabel = "Apply",
   rejectLabel = "Keep current",
+  status = "pending",
+  statusMessage,
 }: ChangeReviewCardProps) {
+  const locked = disabled || status === "applying" || status === "applied" || status === "rejected";
+  const feedback = statusMessage ?? {
+    pending: "", applying: "Applying changes…", applied: "Changes applied.",
+    rejected: "Current plan kept.", error: "Changes could not be applied. Try again.",
+  }[status];
   const titleId = useId();
   const summaryId = useId();
 
   return (
     <section
+      aria-busy={status === "applying"}
       aria-describedby={summary ? summaryId : undefined}
       aria-labelledby={titleId}
       className={`cdk-review ${className}`.trim()}
@@ -56,10 +64,11 @@ export function ChangeReviewCard({
         </ul>
       )}
 
+      <div aria-atomic="true" className="cdk-review__status" role="status">{feedback}</div>
       <div className="cdk-review__actions">
         <button
           className="cdk-review__button cdk-review__button--accept"
-          disabled={disabled}
+          disabled={locked}
           onClick={onAccept}
           type="button"
         >
@@ -67,7 +76,7 @@ export function ChangeReviewCard({
         </button>
         <button
           className="cdk-review__button cdk-review__button--reject"
-          disabled={disabled}
+          disabled={locked}
           onClick={onReject}
           type="button"
         >
