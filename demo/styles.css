@@ -1,0 +1,7 @@
+body { margin: 0; background: #f8fafc; color: #172033; font: 16px/1.5 system-ui, sans-serif; }
+main { box-sizing: border-box; max-width: 850px; margin: auto; padding: 24px; display: grid; gap: 20px; }
+h1, h2, p { margin: 0; }
+.tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.tools button { background: #fff; color: #172033; padding: 10px 14px; border: 1px solid #64748b; border-radius: 8px; font: inherit; cursor: pointer; }
+.tools button:focus-visible { outline: 3px solid #0369a1; outline-offset: 2px; }
+@media (max-width: 400px) { main { padding: 12px; } }
