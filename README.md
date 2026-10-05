@@ -2,11 +2,11 @@
 
 Accessible, themeable React primitives for conversations and human review of agent actions. The kit is provider-neutral: it displays proposals and reports their state while the application owns authorization, execution, persistence, and recovery.
 
-The substantive integration pattern is **propose → review → apply or reject → report the outcome**. A scheduling assistant, support copilot, or workflow tool can share the same accessible review interaction without depending on a particular model provider. Home Huddle is a local reference consumer.
+The integration pattern is **propose → review → apply or reject → report the outcome**. A scheduling assistant, support copilot, or workflow tool can share the same accessible review interaction without depending on a particular model provider. [Home Huddle](https://github.com/andrewodom18/home-huddle) is a reference application.
 
-## Install the development candidate
+## Install from source
 
-This working tree is the **0.3.0 candidate**, not a published release. Build a reproducible local package from this repository:
+Version 0.3.0 has not been published to npm. Build a local package from this repository:
 
 ```bash
 npm ci
@@ -110,11 +110,9 @@ npm run demo
 
 `npm run check` runs lint, types, component tests, real-browser tests with axe, and package consumer checks. Browser tests cover Chromium, Firefox, and WebKit; keyboard input and IME; independent instances; proposal outcomes; reading-history behavior; reduced motion; 320px layouts and enlarged text. Package tests install the tarball into isolated React 18 and 19 consumers, run ESM/CJS server rendering, resolve CSS, and compile both TypeScript NodeNext module forms. Artifacts stay in ignored `output/`.
 
-If a browser cannot start on your host, report its launch error separately from application test failures. Keep all three browser projects enabled in CI; do not silently skip a failed engine.
+Automated checks do not establish screen-reader usability or physical device compatibility. Manual VoiceOver/NVDA, touch, hardware keyboard, and target-device checks are still needed.
 
-Automated checks do not establish screen-reader usability or physical remote/device compatibility. Before a release, manually check VoiceOver/NVDA announcements, touch and hardware keyboard interaction, and the target product's device layout. No Fire TV or Alexa SDK behavior is claimed by this provider-neutral library.
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution and release checks. Development happens on `dev`; stable releases are tagged from `main` only after maintainer review.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidelines.
 
 ## License
 

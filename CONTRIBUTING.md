@@ -17,7 +17,7 @@ The review card is a display contract. Keep application authorization and action
 - Exercise the documented example using the tarball and the explicit CSS import.
 - Review React 18/19 consumer and all browser results.
 - Manually verify screen-reader announcements and target-device interaction.
-- Publish/tag only with maintainer authorization. Update installation instructions only after the artifact actually exists.
+- Update installation instructions when a new package version is available.
 
 ## Reporting problems
 
