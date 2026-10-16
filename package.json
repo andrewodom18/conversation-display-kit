@@ -1,6 +1,6 @@
 {
   "name": "conversation-display-kit",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Accessible React conversations and reviewable agent actions",
   "license": "MIT",
   "type": "module",

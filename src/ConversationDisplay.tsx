@@ -19,17 +19,17 @@ export function ConversationDisplay({
   useImperativeHandle(logRef, () => internalLogRef.current!, []);
   const composing = useRef(false);
   const followsLatest = useRef(true);
-  const jumpingToLatest = useRef(false);
+  const scrollingToLatest = useRef(false);
   const [readingHistory, setReadingHistory] = useState(false);
 
-  function scrollToLatest(animate = false) {
+  function scrollToLatest() {
     const log = internalLogRef.current;
     if (!log) return;
     const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    jumpingToLatest.current = animate && !reduceMotion;
-    // Incoming responses follow immediately, even when several arrive during
-    // one animation. Only an explicit jump animates toward the latest message.
-    log.scrollTo({ top: log.scrollHeight, behavior: jumpingToLatest.current ? "smooth" : "instant" });
+    scrollingToLatest.current = !reduceMotion;
+    // Preserve following intent through intermediate animation frames. A new
+    // response retargets the animation; user input can interrupt it to read history.
+    log.scrollTo({ top: log.scrollHeight, behavior: scrollingToLatest.current ? "smooth" : "instant" });
   }
 
   useEffect(() => {
@@ -78,15 +78,15 @@ export function ConversationDisplay({
           className="cdk-conversation__messages"
           onKeyDown={(event) => {
             if (["ArrowUp", "PageUp", "Home"].includes(event.key)) {
-              jumpingToLatest.current = false;
+              scrollingToLatest.current = false;
               followsLatest.current = false;
             }
           }}
-          onPointerDown={() => { jumpingToLatest.current = false; }}
-          onTouchStart={() => { jumpingToLatest.current = false; }}
+          onPointerDown={() => { scrollingToLatest.current = false; }}
+          onTouchStart={() => { scrollingToLatest.current = false; }}
           onWheel={(event) => {
             if (event.deltaY < 0) {
-              jumpingToLatest.current = false;
+              scrollingToLatest.current = false;
               followsLatest.current = false;
             }
           }}
@@ -94,8 +94,8 @@ export function ConversationDisplay({
             const log = internalLogRef.current;
             if (!log) return;
             const gap = log.scrollHeight - log.scrollTop - log.clientHeight;
-            if (jumpingToLatest.current && gap > 1) return;
-            jumpingToLatest.current = false;
+            if (scrollingToLatest.current && gap > 1) return;
+            scrollingToLatest.current = false;
             const nearBottom = messages.length === 0 || gap <= 48;
             followsLatest.current = nearBottom;
             setReadingHistory(!nearBottom);
@@ -116,7 +116,7 @@ export function ConversationDisplay({
         {readingHistory && <button className="cdk-jump" onClick={() => {
           followsLatest.current = true;
           setReadingHistory(false);
-          scrollToLatest(true);
+          scrollToLatest();
           internalLogRef.current?.focus({ preventScroll: true });
         }} type="button">Jump to latest</button>}
       </div>

@@ -64,12 +64,31 @@ test("history keeps its reading position and supports a keyboard jump", async ({
   await expect.poll(() => log.evaluate((node) => Math.abs(node.scrollHeight - node.clientHeight - node.scrollTop))).toBeLessThan(2);
 });
 
+for (const reducedMotion of ["no-preference", "reduce"] as const) {
+  test(`automatic following ${reducedMotion === "reduce" ? "respects reduced motion" : "animates smoothly"}`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion });
+    const log = page.getByRole("log", { name: "Conversation messages", exact: true });
+    await log.evaluate((node) => {
+      node.dataset.animated = "false";
+      node.addEventListener("scroll", () => {
+        const gap = node.scrollHeight - node.clientHeight - node.scrollTop;
+        if (node.scrollTop > 0 && gap > 2) node.dataset.animated = "true";
+      });
+    });
+    await page.getByRole("button", { name: "Load history" }).click();
+    await expect.poll(() => log.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop)).toBeLessThan(2);
+    // Observe actual intermediate positions instead of assuming an animation
+    // duration or inspecting only the scrollTo option.
+    await expect(log).toHaveAttribute("data-animated", String(reducedMotion === "no-preference"));
+    await expect(page.getByRole("button", { name: "Jump to latest" })).toHaveCount(0);
+  });
+}
+
 test("rapid responses keep following with default motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
   const log = page.getByRole("log", { name: "Conversation messages", exact: true });
   await page.getByRole("button", { name: "Load history" }).click();
-  // Add content once scrolling begins, while a smooth history load would
-  // still be travelling toward its original destination.
+  // Retarget following once scrolling begins, before history settles.
   await expect.poll(() => log.evaluate((node) => node.scrollTop), { intervals: [16] }).toBeGreaterThan(0);
   await page.getByRole("button", { name: "Add long response" }).click();
   await expect.poll(() => log.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop)).toBeLessThan(2);

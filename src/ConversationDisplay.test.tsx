@@ -131,6 +131,7 @@ describe("composer and history safeguards", () => {
     const { rerender } = render(<ConversationDisplay {...defaults} messages={[{ id: "old", role: "assistant", text: "Older response" }]} />);
     const log = screen.getByRole("log");
     Object.defineProperties(log, { scrollHeight: { configurable: true, value: 1000 }, clientHeight: { configurable: true, value: 300 } });
+    fireEvent.wheel(log, { deltaY: -100 });
     fireEvent.scroll(log, { target: { scrollTop: 0 } });
     scroll.mockClear();
     rerender(<ConversationDisplay {...defaults} messages={[{ id: "new", role: "assistant", text: "New response" }]} />);
