@@ -32,6 +32,17 @@ export function ConversationDisplay({
     log.scrollTo({ top: log.scrollHeight, behavior: scrollingToLatest.current ? "smooth" : "instant" });
   }
 
+  function interruptScroll() {
+    const log = internalLogRef.current;
+    if (!scrollingToLatest.current || !log) return;
+    scrollingToLatest.current = false;
+    followsLatest.current = log.scrollHeight - log.scrollTop - log.clientHeight <= 48;
+    setReadingHistory(!followsLatest.current);
+    // Firefox can apply a wheel delta to the animation's destination instead
+    // of stopping it. Cancel the native animation before user scrolling proceeds.
+    log.scrollTo({ top: log.scrollTop, behavior: "instant" });
+  }
+
   useEffect(() => {
     if (followsLatest.current) scrollToLatest();
   }, [messages]);
@@ -78,15 +89,15 @@ export function ConversationDisplay({
           className="cdk-conversation__messages"
           onKeyDown={(event) => {
             if (["ArrowUp", "PageUp", "Home"].includes(event.key)) {
-              scrollingToLatest.current = false;
+              interruptScroll();
               followsLatest.current = false;
             }
           }}
-          onPointerDown={() => { scrollingToLatest.current = false; }}
-          onTouchStart={() => { scrollingToLatest.current = false; }}
+          onPointerDown={interruptScroll}
+          onTouchStart={interruptScroll}
           onWheel={(event) => {
             if (event.deltaY < 0) {
-              scrollingToLatest.current = false;
+              interruptScroll();
               followsLatest.current = false;
             }
           }}

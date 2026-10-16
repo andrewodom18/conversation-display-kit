@@ -154,4 +154,22 @@ describe("composer and history safeguards", () => {
     scroll.mockRestore();
     vi.unstubAllGlobals();
   });
+
+  it("cancels an active native animation when the reader scrolls up", () => {
+    const scroll = vi.spyOn(Element.prototype, "scrollTo");
+    const { rerender } = render(<ConversationDisplay {...defaults} />);
+    const log = screen.getByRole("log");
+    Object.defineProperties(log, {
+      scrollHeight: { configurable: true, value: 1000 },
+      clientHeight: { configurable: true, value: 300 },
+      scrollTop: { configurable: true, value: 250 },
+    });
+    fireEvent.wheel(log, { deltaY: -100 });
+    expect(scroll).toHaveBeenLastCalledWith({ top: 250, behavior: "instant" });
+    expect(screen.getByRole("button", { name: "Jump to latest" })).toBeInTheDocument();
+    scroll.mockClear();
+    rerender(<ConversationDisplay {...defaults} messages={[{ id: "new", role: "assistant", text: "New response" }]} />);
+    expect(scroll).not.toHaveBeenCalled();
+    scroll.mockRestore();
+  });
 });

@@ -119,11 +119,31 @@ test("scrolling up interrupts a jump and preserves the reader's position", async
   await page.getByRole("button", { name: "Jump to latest" }).click();
   await expect.poll(() => log.evaluate((node) => node.scrollTop), { intervals: [16] }).toBeGreaterThan(0);
   await log.hover();
+  await log.evaluate((node) => {
+    node.addEventListener("wheel", () => { node.dataset.wheelTop = String(node.scrollTop); }, { once: true });
+  });
   await page.mouse.wheel(0, -5000);
-  await expect.poll(() => log.evaluate((node) => node.scrollTop)).toBe(0);
+  await expect(log).toHaveAttribute("data-wheel-top", /\d/);
+  const stoppedAt = await log.evaluate((node) => new Promise<number>((resolve) => {
+    let previous = node.scrollTop;
+    let stableFrames = 0;
+    function sample() {
+      const current = node.scrollTop;
+      stableFrames = Math.abs(current - previous) < 0.5 ? stableFrames + 1 : 0;
+      previous = current;
+      if (stableFrames >= 4) resolve(current);
+      else requestAnimationFrame(sample);
+    }
+    requestAnimationFrame(sample);
+  }));
+  // Wheel distances vary across engines. The animation must stop advancing
+  // downward from the user's interruption, wherever native wheel scrolling ends.
+  const interruptedAt = await log.evaluate((node) => Number(node.dataset.wheelTop));
+  expect(stoppedAt).toBeLessThanOrEqual(interruptedAt + 1);
+  expect(await log.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop)).toBeGreaterThan(48);
   await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
   await page.getByRole("button", { name: "Add long response" }).click();
-  await expect.poll(() => log.evaluate((node) => node.scrollTop)).toBe(0);
+  await expect.poll(() => log.evaluate((node, position) => Math.abs(node.scrollTop - position), stoppedAt)).toBeLessThan(2);
 });
 
 test("narrow viewport, long content and enlarged text stay within the page", async ({ page }) => {
