@@ -146,7 +146,7 @@ describe("composer and history safeguards", () => {
     vi.stubGlobal("matchMedia", () => ({ matches: true }));
     const scroll = vi.spyOn(Element.prototype, "scrollTo");
     const { rerender } = render(<ConversationDisplay {...defaults} />);
-    expect(scroll).toHaveBeenCalledWith(expect.objectContaining({ behavior: "auto" }));
+    expect(scroll).toHaveBeenCalledWith(expect.objectContaining({ behavior: "instant" }));
     scroll.mockClear();
     rerender(<ConversationDisplay {...defaults} status="thinking" />);
     expect(scroll).not.toHaveBeenCalled();

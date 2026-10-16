@@ -64,6 +64,49 @@ test("history keeps its reading position and supports a keyboard jump", async ({
   await expect.poll(() => log.evaluate((node) => Math.abs(node.scrollHeight - node.clientHeight - node.scrollTop))).toBeLessThan(2);
 });
 
+test("rapid responses keep following with default motion", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const log = page.getByRole("log", { name: "Conversation messages", exact: true });
+  await page.getByRole("button", { name: "Load history" }).click();
+  // Add content once scrolling begins, while a smooth history load would
+  // still be travelling toward its original destination.
+  await expect.poll(() => log.evaluate((node) => node.scrollTop), { intervals: [16] }).toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Add long response" }).click();
+  await expect.poll(() => log.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop)).toBeLessThan(2);
+  await page.getByRole("button", { name: "Add long response" }).click();
+  await expect.poll(() => log.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop)).toBeLessThan(2);
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toHaveCount(0);
+});
+
+test("a response during an animated jump retains following intent", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const log = page.getByRole("log", { name: "Conversation messages", exact: true });
+  await page.getByRole("button", { name: "Load history" }).click();
+  await expect.poll(() => log.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop)).toBeLessThan(2);
+  await log.evaluate((node) => { node.scrollTop = 0; node.dispatchEvent(new Event("scroll")); });
+  await page.getByRole("button", { name: "Jump to latest" }).click();
+  await expect.poll(() => log.evaluate((node) => node.scrollTop), { intervals: [16] }).toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Add long response" }).click();
+  await expect.poll(() => log.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop)).toBeLessThan(2);
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toHaveCount(0);
+});
+
+test("scrolling up interrupts a jump and preserves the reader's position", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const log = page.getByRole("log", { name: "Conversation messages", exact: true });
+  await page.getByRole("button", { name: "Load history" }).click();
+  await expect.poll(() => log.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop)).toBeLessThan(2);
+  await log.evaluate((node) => { node.scrollTop = 0; node.dispatchEvent(new Event("scroll")); });
+  await page.getByRole("button", { name: "Jump to latest" }).click();
+  await expect.poll(() => log.evaluate((node) => node.scrollTop), { intervals: [16] }).toBeGreaterThan(0);
+  await log.hover();
+  await page.mouse.wheel(0, -5000);
+  await expect.poll(() => log.evaluate((node) => node.scrollTop)).toBe(0);
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
+  await page.getByRole("button", { name: "Add long response" }).click();
+  await expect.poll(() => log.evaluate((node) => node.scrollTop)).toBe(0);
+});
+
 test("narrow viewport, long content and enlarged text stay within the page", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 });
   await page.getByRole("button", { name: "Add long response" }).click();
