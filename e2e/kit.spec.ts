@@ -51,8 +51,8 @@ test("history keeps its reading position and supports a keyboard jump", async ({
   await page.getByRole("button", { name: "Load history" }).click();
   const log = page.getByRole("log", { name: "Conversation messages", exact: true });
   await log.focus();
-  await log.press("ControlOrMeta+Home");
-  // Home scrolling differs by engine; the element is keyboard focusable in all engines.
+  // Set the reading position without leaving a native keyboard-scroll animation
+  // running while the separate Jump to latest keyboard interaction is tested.
   await log.evaluate((node) => { node.scrollTop = 0; node.dispatchEvent(new Event("scroll")); });
   await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
   await page.getByRole("button", { name: "Add long response" }).click();

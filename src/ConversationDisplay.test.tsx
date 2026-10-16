@@ -155,21 +155,31 @@ describe("composer and history safeguards", () => {
     vi.unstubAllGlobals();
   });
 
-  it("cancels an active native animation when the reader scrolls up", () => {
+  it.each([
+    { deltaMode: 0, deltaY: -100, target: 150 },
+    { deltaMode: 1, deltaY: -2, target: 210 },
+    { deltaMode: 2, deltaY: -1, target: -50 },
+  ])("cancels an active animation and handles upward wheel units $deltaMode", ({ deltaMode, deltaY, target }) => {
     const scroll = vi.spyOn(Element.prototype, "scrollTo");
     const { rerender } = render(<ConversationDisplay {...defaults} />);
     const log = screen.getByRole("log");
+    log.style.lineHeight = "20px";
     Object.defineProperties(log, {
       scrollHeight: { configurable: true, value: 1000 },
       clientHeight: { configurable: true, value: 300 },
       scrollTop: { configurable: true, value: 250 },
     });
-    fireEvent.wheel(log, { deltaY: -100 });
-    expect(scroll).toHaveBeenLastCalledWith({ top: 250, behavior: "instant" });
+    scroll.mockClear();
+    expect(fireEvent.wheel(log, { deltaY: -100, ctrlKey: true, cancelable: true })).toBe(true);
+    expect(scroll).not.toHaveBeenCalled();
+    expect(fireEvent.wheel(log, { deltaMode, deltaY, cancelable: true })).toBe(false);
+    expect(scroll).toHaveBeenCalledWith({ top: 250, behavior: "instant" });
+    expect(scroll).toHaveBeenLastCalledWith({ top: target, behavior: "instant" });
     expect(screen.getByRole("button", { name: "Jump to latest" })).toBeInTheDocument();
     scroll.mockClear();
     rerender(<ConversationDisplay {...defaults} messages={[{ id: "new", role: "assistant", text: "New response" }]} />);
     expect(scroll).not.toHaveBeenCalled();
+    expect(fireEvent.wheel(log, { deltaY: -100, cancelable: true })).toBe(true);
     scroll.mockRestore();
   });
 });

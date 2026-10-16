@@ -1,4 +1,4 @@
-import { useEffect, useId, useImperativeHandle, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useImperativeHandle, useRef, useState } from "react";
 import { ConversationStatus } from "./ConversationStatus";
 import type { ConversationDisplayProps } from "./types";
 
@@ -32,7 +32,7 @@ export function ConversationDisplay({
     log.scrollTo({ top: log.scrollHeight, behavior: scrollingToLatest.current ? "smooth" : "instant" });
   }
 
-  function interruptScroll() {
+  const interruptScroll = useCallback(() => {
     const log = internalLogRef.current;
     if (!scrollingToLatest.current || !log) return;
     scrollingToLatest.current = false;
@@ -41,7 +41,28 @@ export function ConversationDisplay({
     // Firefox can apply a wheel delta to the animation's destination instead
     // of stopping it. Cancel the native animation before user scrolling proceeds.
     log.scrollTo({ top: log.scrollTop, behavior: "instant" });
-  }
+  }, []);
+
+  useEffect(() => {
+    const log = internalLogRef.current;
+    if (!log) return;
+    function onWheel(event: WheelEvent) {
+      if (event.ctrlKey || event.deltaY >= 0) return;
+      if (scrollingToLatest.current) {
+        // Prevent Firefox from retargeting the old smooth-scroll destination
+        // after cancellation. Only this interrupting wheel needs manual handling;
+        // subsequent wheel events keep the browser's normal scrolling behavior.
+        event.preventDefault();
+        interruptScroll();
+        const lineHeight = Number.parseFloat(getComputedStyle(log!).lineHeight) || 16;
+        const unit = event.deltaMode === 1 ? lineHeight : event.deltaMode === 2 ? log!.clientHeight : 1;
+        log!.scrollTo({ top: log!.scrollTop + event.deltaY * unit, behavior: "instant" });
+      }
+      followsLatest.current = false;
+    }
+    log.addEventListener("wheel", onWheel, { passive: false });
+    return () => log.removeEventListener("wheel", onWheel);
+  }, [interruptScroll]);
 
   useEffect(() => {
     if (followsLatest.current) scrollToLatest();
@@ -95,12 +116,6 @@ export function ConversationDisplay({
           }}
           onPointerDown={interruptScroll}
           onTouchStart={interruptScroll}
-          onWheel={(event) => {
-            if (event.deltaY < 0) {
-              interruptScroll();
-              followsLatest.current = false;
-            }
-          }}
           onScroll={() => {
             const log = internalLogRef.current;
             if (!log) return;
