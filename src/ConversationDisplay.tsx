@@ -1,4 +1,4 @@
-import { useEffect, useId, useImperativeHandle, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useImperativeHandle, useRef, useState } from "react";
 import { ConversationStatus } from "./ConversationStatus";
 import type { ConversationDisplayProps } from "./types";
 
@@ -19,14 +19,50 @@ export function ConversationDisplay({
   useImperativeHandle(logRef, () => internalLogRef.current!, []);
   const composing = useRef(false);
   const followsLatest = useRef(true);
+  const scrollingToLatest = useRef(false);
   const [readingHistory, setReadingHistory] = useState(false);
 
   function scrollToLatest() {
     const log = internalLogRef.current;
     if (!log) return;
     const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    log.scrollTo({ top: log.scrollHeight, behavior: reduceMotion ? "auto" : "smooth" });
+    scrollingToLatest.current = !reduceMotion;
+    // Preserve following intent through intermediate animation frames. A new
+    // response retargets the animation; user input can interrupt it to read history.
+    log.scrollTo({ top: log.scrollHeight, behavior: scrollingToLatest.current ? "smooth" : "instant" });
   }
+
+  const interruptScroll = useCallback(() => {
+    const log = internalLogRef.current;
+    if (!scrollingToLatest.current || !log) return;
+    scrollingToLatest.current = false;
+    followsLatest.current = log.scrollHeight - log.scrollTop - log.clientHeight <= 48;
+    setReadingHistory(!followsLatest.current);
+    // Firefox can apply a wheel delta to the animation's destination instead
+    // of stopping it. Cancel the native animation before user scrolling proceeds.
+    log.scrollTo({ top: log.scrollTop, behavior: "instant" });
+  }, []);
+
+  useEffect(() => {
+    const log = internalLogRef.current;
+    if (!log) return;
+    function onWheel(event: WheelEvent) {
+      if (event.ctrlKey || event.deltaY >= 0) return;
+      if (scrollingToLatest.current) {
+        // Prevent Firefox from retargeting the old smooth-scroll destination
+        // after cancellation. Only this interrupting wheel needs manual handling;
+        // subsequent wheel events keep the browser's normal scrolling behavior.
+        event.preventDefault();
+        interruptScroll();
+        const lineHeight = Number.parseFloat(getComputedStyle(log!).lineHeight) || 16;
+        const unit = event.deltaMode === 1 ? lineHeight : event.deltaMode === 2 ? log!.clientHeight : 1;
+        log!.scrollTo({ top: log!.scrollTop + event.deltaY * unit, behavior: "instant" });
+      }
+      followsLatest.current = false;
+    }
+    log.addEventListener("wheel", onWheel, { passive: false });
+    return () => log.removeEventListener("wheel", onWheel);
+  }, [interruptScroll]);
 
   useEffect(() => {
     if (followsLatest.current) scrollToLatest();
@@ -72,10 +108,21 @@ export function ConversationDisplay({
         <div
           aria-label={logLabel}
           className="cdk-conversation__messages"
+          onKeyDown={(event) => {
+            if (["ArrowUp", "PageUp", "Home"].includes(event.key)) {
+              interruptScroll();
+              followsLatest.current = false;
+            }
+          }}
+          onPointerDown={interruptScroll}
+          onTouchStart={interruptScroll}
           onScroll={() => {
             const log = internalLogRef.current;
             if (!log) return;
-            const nearBottom = messages.length === 0 || log.scrollHeight - log.scrollTop - log.clientHeight <= 48;
+            const gap = log.scrollHeight - log.scrollTop - log.clientHeight;
+            if (scrollingToLatest.current && gap > 1) return;
+            scrollingToLatest.current = false;
+            const nearBottom = messages.length === 0 || gap <= 48;
             followsLatest.current = nearBottom;
             setReadingHistory(!nearBottom);
           }}

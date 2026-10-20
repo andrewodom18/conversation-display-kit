@@ -6,14 +6,14 @@ The integration pattern is **propose → review → apply or reject → report t
 
 ## Install from source
 
-Version 0.3.0 has not been published to npm. Build a local package from this repository:
+Version 0.3.3 has not been published to npm. Build a local package from this repository:
 
 ```bash
 npm ci
 npm run test:package
 ```
 
-From your application, install the generated `output/conversation-display-kit-0.3.0.tgz` using its local path. React and React DOM 18 or 19 are peer dependencies. Import the stylesheet explicitly once in your application entry point:
+From your application, install the generated `output/conversation-display-kit-0.3.3.tgz` using its local path. React and React DOM 18 or 19 are peer dependencies. Import the stylesheet explicitly once in your application entry point:
 
 ```tsx
 import "conversation-display-kit/styles.css";
@@ -77,7 +77,7 @@ export function Demo() {
 
 ## Public API
 
-- **ConversationDisplay**: controlled `messages`, `value`, `onValueChange`, `onSubmit`; optional `status`, `disabled`, `placeholder`, `emptyState`, `composerAction`, `className`, `submitLabel`. `maxLength` defaults to 500; controlled over-limit values cannot submit. `multiline` defaults to false; when enabled, Enter sends and Shift+Enter adds a newline. IME confirmation never submits. `inputRef` supports an input/textarea ref and `logRef` a div ref. Optional `inputLabel`, `logLabel`, `title`, and `statusLabels` customize accessible labels. History is keyboard focusable; new messages follow only while near the bottom, with a “Jump to latest” button when reading older messages. Reduced-motion preferences disable smooth scrolling.
+- **ConversationDisplay**: controlled `messages`, `value`, `onValueChange`, `onSubmit`; optional `status`, `disabled`, `placeholder`, `emptyState`, `composerAction`, `className`, `submitLabel`. `maxLength` defaults to 500; controlled over-limit values cannot submit. `multiline` defaults to false; when enabled, Enter sends and Shift+Enter adds a newline. IME confirmation never submits. `inputRef` supports an input/textarea ref and `logRef` a div ref. Optional `inputLabel`, `logLabel`, `title`, and `statusLabels` customize accessible labels. History is keyboard focusable; new messages follow only while near the bottom, with a “Jump to latest” button when reading older messages. Incoming messages and the “Jump to latest” action scroll smoothly unless reduced motion is preferred. New responses retarget an ongoing animation; scrolling up cancels the active animation and interrupts following so you can read history across browsers.
 - **PromptChips**: `suggestions`, `onSelect`, optional `disabled` and accessible group `label`. Supply unique suggestion strings.
 - **ConversationStatus**: `value` is `idle`, `listening`, `thinking`, or `error`; optional `labels` overrides status text. Uses a polite live region.
 - **ChangeReviewCard**: `title`, optional `summary`, `changes`, `onAccept`, and `onReject`. Each `ReviewChange` has a stable `id`, `label`, and optional `before`/`after`. Optional `acceptLabel`, `rejectLabel`, `disabled`, `className`, `status`, and `statusMessage`. `status` defaults to `pending`; `applying`, `applied`, and `rejected` disable both actions. `error` allows retry. Outcome text is announced through a status region. Set `applying` immediately in your callback while the operation is pending; the component does not execute operations itself.

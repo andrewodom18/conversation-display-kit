@@ -51,8 +51,8 @@ test("history keeps its reading position and supports a keyboard jump", async ({
   await page.getByRole("button", { name: "Load history" }).click();
   const log = page.getByRole("log", { name: "Conversation messages", exact: true });
   await log.focus();
-  await log.press("ControlOrMeta+Home");
-  // Home scrolling differs by engine; the element is keyboard focusable in all engines.
+  // Set the reading position without leaving a native keyboard-scroll animation
+  // running while the separate Jump to latest keyboard interaction is tested.
   await log.evaluate((node) => { node.scrollTop = 0; node.dispatchEvent(new Event("scroll")); });
   await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
   await page.getByRole("button", { name: "Add long response" }).click();
@@ -62,6 +62,88 @@ test("history keeps its reading position and supports a keyboard jump", async ({
   await jump.press("Enter");
   await expect(log).toBeFocused();
   await expect.poll(() => log.evaluate((node) => Math.abs(node.scrollHeight - node.clientHeight - node.scrollTop))).toBeLessThan(2);
+});
+
+for (const reducedMotion of ["no-preference", "reduce"] as const) {
+  test(`automatic following ${reducedMotion === "reduce" ? "respects reduced motion" : "animates smoothly"}`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion });
+    const log = page.getByRole("log", { name: "Conversation messages", exact: true });
+    await log.evaluate((node) => {
+      node.dataset.animated = "false";
+      node.addEventListener("scroll", () => {
+        const gap = node.scrollHeight - node.clientHeight - node.scrollTop;
+        if (node.scrollTop > 0 && gap > 2) node.dataset.animated = "true";
+      });
+    });
+    await page.getByRole("button", { name: "Load history" }).click();
+    await expect.poll(() => log.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop)).toBeLessThan(2);
+    // Observe actual intermediate positions instead of assuming an animation
+    // duration or inspecting only the scrollTo option.
+    await expect(log).toHaveAttribute("data-animated", String(reducedMotion === "no-preference"));
+    await expect(page.getByRole("button", { name: "Jump to latest" })).toHaveCount(0);
+  });
+}
+
+test("rapid responses keep following with default motion", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const log = page.getByRole("log", { name: "Conversation messages", exact: true });
+  await page.getByRole("button", { name: "Load history" }).click();
+  // Retarget following once scrolling begins, before history settles.
+  await expect.poll(() => log.evaluate((node) => node.scrollTop), { intervals: [16] }).toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Add long response" }).click();
+  await expect.poll(() => log.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop)).toBeLessThan(2);
+  await page.getByRole("button", { name: "Add long response" }).click();
+  await expect.poll(() => log.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop)).toBeLessThan(2);
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toHaveCount(0);
+});
+
+test("a response during an animated jump retains following intent", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const log = page.getByRole("log", { name: "Conversation messages", exact: true });
+  await page.getByRole("button", { name: "Load history" }).click();
+  await expect.poll(() => log.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop)).toBeLessThan(2);
+  await log.evaluate((node) => { node.scrollTop = 0; node.dispatchEvent(new Event("scroll")); });
+  await page.getByRole("button", { name: "Jump to latest" }).click();
+  await expect.poll(() => log.evaluate((node) => node.scrollTop), { intervals: [16] }).toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Add long response" }).click();
+  await expect.poll(() => log.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop)).toBeLessThan(2);
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toHaveCount(0);
+});
+
+test("scrolling up interrupts a jump and preserves the reader's position", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const log = page.getByRole("log", { name: "Conversation messages", exact: true });
+  await page.getByRole("button", { name: "Load history" }).click();
+  await expect.poll(() => log.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop)).toBeLessThan(2);
+  await log.evaluate((node) => { node.scrollTop = 0; node.dispatchEvent(new Event("scroll")); });
+  await page.getByRole("button", { name: "Jump to latest" }).click();
+  await expect.poll(() => log.evaluate((node) => node.scrollTop), { intervals: [16] }).toBeGreaterThan(0);
+  await log.hover();
+  await log.evaluate((node) => {
+    node.addEventListener("wheel", () => { node.dataset.wheelTop = String(node.scrollTop); }, { once: true });
+  });
+  await page.mouse.wheel(0, -5000);
+  await expect(log).toHaveAttribute("data-wheel-top", /\d/);
+  const stoppedAt = await log.evaluate((node) => new Promise<number>((resolve) => {
+    let previous = node.scrollTop;
+    let stableFrames = 0;
+    function sample() {
+      const current = node.scrollTop;
+      stableFrames = Math.abs(current - previous) < 0.5 ? stableFrames + 1 : 0;
+      previous = current;
+      if (stableFrames >= 4) resolve(current);
+      else requestAnimationFrame(sample);
+    }
+    requestAnimationFrame(sample);
+  }));
+  // Wheel distances vary across engines. The animation must stop advancing
+  // downward from the user's interruption, wherever native wheel scrolling ends.
+  const interruptedAt = await log.evaluate((node) => Number(node.dataset.wheelTop));
+  expect(stoppedAt).toBeLessThanOrEqual(interruptedAt + 1);
+  expect(await log.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop)).toBeGreaterThan(48);
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
+  await page.getByRole("button", { name: "Add long response" }).click();
+  await expect.poll(() => log.evaluate((node, position) => Math.abs(node.scrollTop - position), stoppedAt)).toBeLessThan(2);
 });
 
 test("narrow viewport, long content and enlarged text stay within the page", async ({ page }) => {

@@ -131,6 +131,7 @@ describe("composer and history safeguards", () => {
     const { rerender } = render(<ConversationDisplay {...defaults} messages={[{ id: "old", role: "assistant", text: "Older response" }]} />);
     const log = screen.getByRole("log");
     Object.defineProperties(log, { scrollHeight: { configurable: true, value: 1000 }, clientHeight: { configurable: true, value: 300 } });
+    fireEvent.wheel(log, { deltaY: -100 });
     fireEvent.scroll(log, { target: { scrollTop: 0 } });
     scroll.mockClear();
     rerender(<ConversationDisplay {...defaults} messages={[{ id: "new", role: "assistant", text: "New response" }]} />);
@@ -146,11 +147,39 @@ describe("composer and history safeguards", () => {
     vi.stubGlobal("matchMedia", () => ({ matches: true }));
     const scroll = vi.spyOn(Element.prototype, "scrollTo");
     const { rerender } = render(<ConversationDisplay {...defaults} />);
-    expect(scroll).toHaveBeenCalledWith(expect.objectContaining({ behavior: "auto" }));
+    expect(scroll).toHaveBeenCalledWith(expect.objectContaining({ behavior: "instant" }));
     scroll.mockClear();
     rerender(<ConversationDisplay {...defaults} status="thinking" />);
     expect(scroll).not.toHaveBeenCalled();
     scroll.mockRestore();
     vi.unstubAllGlobals();
+  });
+
+  it.each([
+    { deltaMode: 0, deltaY: -100, target: 150 },
+    { deltaMode: 1, deltaY: -2, target: 210 },
+    { deltaMode: 2, deltaY: -1, target: -50 },
+  ])("cancels an active animation and handles upward wheel units $deltaMode", ({ deltaMode, deltaY, target }) => {
+    const scroll = vi.spyOn(Element.prototype, "scrollTo");
+    const { rerender } = render(<ConversationDisplay {...defaults} />);
+    const log = screen.getByRole("log");
+    log.style.lineHeight = "20px";
+    Object.defineProperties(log, {
+      scrollHeight: { configurable: true, value: 1000 },
+      clientHeight: { configurable: true, value: 300 },
+      scrollTop: { configurable: true, value: 250 },
+    });
+    scroll.mockClear();
+    expect(fireEvent.wheel(log, { deltaY: -100, ctrlKey: true, cancelable: true })).toBe(true);
+    expect(scroll).not.toHaveBeenCalled();
+    expect(fireEvent.wheel(log, { deltaMode, deltaY, cancelable: true })).toBe(false);
+    expect(scroll).toHaveBeenCalledWith({ top: 250, behavior: "instant" });
+    expect(scroll).toHaveBeenLastCalledWith({ top: target, behavior: "instant" });
+    expect(screen.getByRole("button", { name: "Jump to latest" })).toBeInTheDocument();
+    scroll.mockClear();
+    rerender(<ConversationDisplay {...defaults} messages={[{ id: "new", role: "assistant", text: "New response" }]} />);
+    expect(scroll).not.toHaveBeenCalled();
+    expect(fireEvent.wheel(log, { deltaY: -100, cancelable: true })).toBe(true);
+    scroll.mockRestore();
   });
 });
